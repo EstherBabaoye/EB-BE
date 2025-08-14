@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: eb-be                     # You can rename this if you want
+    env: docker                     # Because we're using a Dockerfile
+    plan: free                       # Free Render plan
+    autoDeploy: true                 # Auto-deploy on every push to GitHub
+    disk:
+      name: laravel-data             # Persistent storage (keeps SQLite data)
+      mountPath: /app/storage
+      sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        fromService:
+          type: web
+          name: eb-be
+          property: url
+      - key: QUEUE_CONNECTION
+        value: sync
+
+      # === Mail Settings ===
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: "465"
+      - key: MAIL_ENCRYPTION
+        value: ssl
+      - key: MAIL_USERNAME
+        value: estherbabaoye@gmail.com
+      - key: MAIL_PASSWORD
+        value: cnpharcwmormxeaw        # ⚠ Replace with your NEW Gmail App Password
+      - key: MAIL_FROM_ADDRESS
+        value: estherbabaoye@gmail.com
+      - key: MAIL_FROM_NAME
+        value: "EB Contact API"
+
+      # === Laravel App Name ===
+      - key: APP_NAME
+        value: "Esther Babaoye"
+
+      # === Vite Frontend Name (optional, for consistency) ===
+      - key: VITE_APP_NAME
+        value: "Esther Babaoye"
