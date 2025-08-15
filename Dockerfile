@@ -1,4 +1,4 @@
-# ---- Build stage: install PHP dependencies ----
+# ---- Build stage: install PHP dependencies (no artisan calls) ----
 FROM composer:2 AS vendor
 WORKDIR /app
 
@@ -27,19 +27,21 @@ RUN set -eux; \
 # Build required PHP extensions (PDO core is built-in)
 RUN docker-php-ext-install -j"$(nproc)" mbstring
 
-# Copy app + vendor
+# Copy app + vendor from build stage
 COPY . .
 COPY --from=vendor /app/vendor /app/vendor
+
+# (Safety) If a local .env slipped into the repo, don't let it affect runtime
+# Comment this line out if you really need to ship a .env, but better to keep it out of git.
+RUN rm -f .env || true
 
 # Writable dirs
 RUN mkdir -p bootstrap/cache storage/logs \
  && chown -R www-data:www-data storage bootstrap/cache
 
-# Safe clears at build
-RUN php artisan config:clear || true \
- && php artisan route:clear || true \
- && php artisan cache:clear || true
-
-# Boot: clear caches, then serve via router script (so CORS preflight hits Laravel)
-CMD sh -c "php artisan config:clear && php artisan route:clear && php artisan cache:clear \
+# ---- Boot: only run artisan at runtime (after Render env vars exist) ----
+# Serve via router script so OPTIONS hits Laravel (CORS headers apply).
+CMD sh -c "php artisan config:clear || true \
+  && php artisan route:clear || true \
+  && php artisan cache:clear || true \
   && php -S 0.0.0.0:$PORT -t public public/index.php"
