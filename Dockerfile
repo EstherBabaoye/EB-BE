@@ -13,16 +13,18 @@ RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --no-
 FROM php:8.2-cli
 WORKDIR /app
 
-# Build tools + TLS; no sqlite, no git, no heavy libs
+# Build tools + TLS + oniguruma for mbstring
 RUN set -eux; \
     apt-get update -o Acquire::Retries=3; \
     apt-get install -y --no-install-recommends \
         $PHPIZE_DEPS \
+        libonig-dev \
+        pkg-config \
         ca-certificates \
     ; \
     rm -rf /var/lib/apt/lists/*
 
-# Needed for Laravel
+# Build required PHP extensions (PDO core is built-in)
 RUN docker-php-ext-install -j"$(nproc)" mbstring
 
 # Copy app + vendor
